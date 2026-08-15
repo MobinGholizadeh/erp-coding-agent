@@ -24,3 +24,7 @@ class Task(BaseModel):
     errors: List[Dict[str, Any]] = Field(default_factory=list)
     tests: List[Dict[str, Any]] = Field(default_factory=list)
     events: List[Event] = Field(default_factory=list)
+    result: Optional[str] = None
+    created_at: datetime = Field(default_factory=_now_utc)
+    updated_at: datetime = Field(default_factory=_now_utc)
+
