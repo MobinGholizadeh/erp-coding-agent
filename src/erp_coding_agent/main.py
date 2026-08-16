@@ -1,6 +1,7 @@
 from fastapi import FastAPI, APIRouter
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
 from .config.settings import get_settings
 from .logging.logger import logger
@@ -26,6 +27,14 @@ app = FastAPI(
     description="API gateway for the ERP autonomous coding agent.",
     version="0.1.0",
     lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.exception_handler(AgentException)

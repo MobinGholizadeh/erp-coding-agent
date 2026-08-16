@@ -11,18 +11,22 @@ class ContextManager:
     def history(self) -> List[Message]:
         return self._history
 
-    def append_message(self, role: Role, content: str):
-        self._history.append(Message(role=role, content=content))
+    def append_message(self, role: Role, content: str = None, **kwargs):
+        self._history.append(Message(role=role, content=content, **kwargs))
 
-    def append_tool_result(self, tool_name: str, content: str):
-        # We model tool results as user messages describing the result,
-        # or as specific tool result roles if supported. 
-        # For Qwen via OpenAI API, they might be function/tool roles, 
-        # but to keep it provider-agnostic and simple, we'll prefix as USER.
-        self.append_message(
-            Role.USER, 
-            f"[Tool Result: {tool_name}]\n{content}"
-        )
+    def append_tool_result(self, tool_name: str, content: str, tool_call_id: str = None):
+        if tool_call_id:
+            self.append_message(
+                Role.TOOL,
+                content=content,
+                name=tool_name,
+                tool_call_id=tool_call_id
+            )
+        else:
+            self.append_message(
+                Role.USER, 
+                content=f"[Tool Result: {tool_name}]\n{content}"
+            )
 
     def get_messages(self) -> List[Message]:
         return list(self._history)

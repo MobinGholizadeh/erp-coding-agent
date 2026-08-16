@@ -1,5 +1,5 @@
 from .models import Message, Role, TokenUsage, LLMRequest, LLMResponse
-from .client import LLMClient, QwenClient, MockLLM
+from .client import LLMClient, QwenClient, MockLLM, get_llm_client
 
 __all__ = [
     "Message",
@@ -10,4 +10,5 @@ __all__ = [
     "LLMClient",
     "QwenClient",
     "MockLLM",
+    "get_llm_client",
 ]

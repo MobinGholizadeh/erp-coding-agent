@@ -5,7 +5,7 @@ import json
 import asyncio
 import logging
 
-from .models import LLMRequest, LLMResponse, TokenUsage, Message
+from .models import LLMRequest, LLMResponse, TokenUsage, Message, ToolCall
 from ..config.settings import LLMSettings
 from ..error_handling.exceptions import LLMAPIError, LLMTimeoutError
 
@@ -34,10 +34,12 @@ class QwenClient(LLMClient):
     def _prepare_payload(self, request: LLMRequest) -> Dict[str, Any]:
         payload = {
             "model": request.model or self.default_model,
-            "messages": [{"role": m.role.value, "content": m.content} for m in request.messages],
+            "messages": [m.model_dump(exclude_none=True) for m in request.messages],
             "temperature": request.temperature if request.temperature is not None else self.settings.temperature,
             "max_tokens": request.max_tokens if request.max_tokens is not None else self.settings.max_tokens,
         }
+        if request.tools:
+            payload["tools"] = [t.model_dump(exclude_none=True) for t in request.tools]
         
         if request.response_format:
             # Check if using the official structured output way or just expecting JSON
@@ -100,6 +102,7 @@ class QwenClient(LLMClient):
             data = response.json()
             message = data["choices"][0]["message"]
             content = message.get("content", "")
+            model_returned = data.get("model", payload.get("model"))
             
             usage_data = data.get("usage", {})
             usage = TokenUsage(
@@ -116,7 +119,18 @@ class QwenClient(LLMClient):
                     # Depending on strictness, we might log a warning or raise an exception
                     logger.warning("Failed to decode structured output as JSON")
             
-            return LLMResponse(content=content, usage=usage, structured_data=structured_data)
+            tool_calls_data = message.get("tool_calls")
+            tool_calls = None
+            if tool_calls_data:
+                tool_calls = [ToolCall(**tc) for tc in tool_calls_data]
+            
+            return LLMResponse(
+                content=content, 
+                usage=usage, 
+                structured_data=structured_data,
+                tool_calls=tool_calls,
+                model=model_returned
+            )
 
     async def generate_stream(self, request: LLMRequest) -> AsyncGenerator[str, None]:
         headers = {
@@ -176,3 +190,8 @@ class MockLLM(LLMClient):
         chunks = self.stream_responses.pop(0)
         for chunk in chunks:
             yield chunk
+
+def get_llm_client(settings: LLMSettings) -> LLMClient:
+    if settings.provider.lower() == "mock":
+        return MockLLM()
+    return QwenClient(settings)

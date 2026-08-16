@@ -7,7 +7,7 @@ from ..domain.models import Task, Event, _now_utc
 from ..domain.states import TaskStatus, AgentState
 from ..agent.controller.agent_controller import AgentController
 from ..agent.controller.state_machine import AgentState as ControllerState
-from ..llm.client import LLMClient, QwenClient
+from ..llm.client import LLMClient, get_llm_client
 from ..config.settings import get_settings
 from ..tools.registry import ToolRegistry
 from ..tools import (
@@ -46,7 +46,7 @@ class TaskManager:
             return self._controller_factory(repo_path)
             
         settings = get_settings()
-        llm = self._llm_client or QwenClient(settings.llm)
+        llm = self._llm_client or get_llm_client(settings.llm)
         
         if self._tool_registry:
             registry = self._tool_registry
